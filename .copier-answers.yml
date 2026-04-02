@@ -1,0 +1,6 @@
+_commit: ae322be
+_src_path: https://github.com/actcore/act-template-rust
+description: Open Wallet Standard — crypto wallet tools for AI agents
+needs_filesystem: true
+needs_http: false
+project_name: openwallet
