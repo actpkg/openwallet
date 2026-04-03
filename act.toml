@@ -1,3 +1,4 @@
 [std]
+name = "openwallet"
 
 [std.capabilities."wasi:filesystem"]
