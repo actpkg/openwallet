@@ -16,7 +16,7 @@ ows-signer = "1.2"
 hex = "0.4"
 uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde", "clock"], default-features = false }
-getrandom = "0.2"
+getrandom = "0.4"
 zeroize = "1"
 
 [profile.release]
