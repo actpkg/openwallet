@@ -2,8 +2,7 @@
 name: openwallet
 description: Open Wallet Standard — crypto wallet for AI agents. Create wallets, get addresses, sign messages and transactions across 8 blockchains.
 metadata:
-  act:
-    passphrase: ""
+  act: {}
 ---
 
 # openwallet
