@@ -4,12 +4,12 @@ mod vault;
 
 use act_sdk::prelude::*;
 use ows_core::{
-    default_chain_for_type, parse_chain, ApiKeyFile, ChainType, EncryptedWallet, KeyType,
-    WalletAccount, ALL_CHAIN_TYPES,
+    ALL_CHAIN_TYPES, ApiKeyFile, ChainType, EncryptedWallet, KeyType, WalletAccount,
+    default_chain_for_type, parse_chain,
 };
 use ows_signer::{
-    decrypt, encrypt, signer_for_chain, CryptoEnvelope, HdDeriver, Mnemonic, MnemonicStrength,
-    SecretBytes,
+    CryptoEnvelope, HdDeriver, Mnemonic, MnemonicStrength, SecretBytes, decrypt, encrypt,
+    signer_for_chain,
 };
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
@@ -180,8 +180,7 @@ fn resolve_agent_mode(
         .map_err(|e| ActError::capability_denied(format!("invalid API key: {e}")))?;
 
     // 2. Check expiry
-    key_store::check_expiry(&key_file)
-        .map_err(|e| ActError::capability_denied(e))?;
+    key_store::check_expiry(&key_file).map_err(ActError::capability_denied)?;
 
     // 3. Check wallet scope
     if !key_file.wallet_ids.contains(&wallet.id) {
@@ -267,7 +266,10 @@ mod component {
     use super::*;
 
     /// Create a new universal wallet with addresses for all supported chains.
-    #[act_tool(description = "Create a new HD wallet with addresses for EVM, Solana, Bitcoin, Cosmos, Tron, TON, Filecoin, and Sui", destructive)]
+    #[act_tool(
+        description = "Create a new HD wallet with addresses for EVM, Solana, Bitcoin, Cosmos, Tron, TON, Filecoin, and Sui",
+        destructive
+    )]
     fn create_wallet(
         /// Name for the new wallet
         name: String,
@@ -301,7 +303,8 @@ mod component {
             .map_err(|e| ActError::internal(e.to_string()))?;
 
         let wallet_id = uuid::Uuid::new_v4().to_string();
-        let wallet = EncryptedWallet::new(wallet_id, name, accounts, crypto_json, KeyType::Mnemonic);
+        let wallet =
+            EncryptedWallet::new(wallet_id, name, accounts, crypto_json, KeyType::Mnemonic);
 
         vault::save_wallet(&wallet).map_err(ActError::internal)?;
 
@@ -310,7 +313,10 @@ mod component {
     }
 
     /// List all wallets in the vault.
-    #[act_tool(description = "List all wallets in the vault with their addresses", read_only)]
+    #[act_tool(
+        description = "List all wallets in the vault with their addresses",
+        read_only
+    )]
     fn list_wallets() -> ActResult<serde_json::Value> {
         let wallets = vault::list_wallets().map_err(ActError::internal)?;
         let infos: Vec<WalletInfo> = wallets.iter().map(wallet_to_info).collect();
@@ -318,7 +324,10 @@ mod component {
     }
 
     /// Get a single wallet by name or ID.
-    #[act_tool(description = "Get wallet details and addresses by name or ID", read_only)]
+    #[act_tool(
+        description = "Get wallet details and addresses by name or ID",
+        read_only
+    )]
     fn get_wallet(
         /// Wallet name or ID
         wallet: String,
@@ -355,7 +364,9 @@ mod component {
     }
 
     /// Sign an arbitrary message.
-    #[act_tool(description = "Sign a message with chain-specific formatting (EIP-191 for EVM, Ed25519 for Solana/TON)")]
+    #[act_tool(
+        description = "Sign a message with chain-specific formatting (EIP-191 for EVM, Ed25519 for Solana/TON)"
+    )]
     fn sign_message(
         /// Wallet name or ID
         wallet: String,
@@ -385,8 +396,13 @@ mod component {
             }
         };
 
-        let key =
-            resolve_signing_key(credential, &wallet, parsed.chain_id, parsed.chain_type, index)?;
+        let key = resolve_signing_key(
+            credential,
+            &wallet,
+            parsed.chain_id,
+            parsed.chain_type,
+            index,
+        )?;
 
         let signer = signer_for_chain(parsed.chain_type);
         let output = signer
@@ -401,7 +417,9 @@ mod component {
     }
 
     /// Sign a raw transaction.
-    #[act_tool(description = "Sign a raw transaction (hex-encoded). Returns hex-encoded signature.")]
+    #[act_tool(
+        description = "Sign a raw transaction (hex-encoded). Returns hex-encoded signature."
+    )]
     fn sign_transaction(
         /// Wallet name or ID
         wallet: String,
@@ -421,8 +439,13 @@ mod component {
         let tx_bytes = hex::decode(tx_hex_clean)
             .map_err(|e| ActError::invalid_args(format!("invalid hex transaction: {e}")))?;
 
-        let key =
-            resolve_signing_key(credential, &wallet, parsed.chain_id, parsed.chain_type, index)?;
+        let key = resolve_signing_key(
+            credential,
+            &wallet,
+            parsed.chain_id,
+            parsed.chain_type,
+            index,
+        )?;
 
         let signer = signer_for_chain(parsed.chain_type);
         let signable = signer

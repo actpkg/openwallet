@@ -55,15 +55,17 @@ pub fn load_wallet(name_or_id: &str) -> Result<EncryptedWallet, String> {
     // Try by ID first (direct file lookup).
     let id_path = wallet_path(name_or_id);
     if id_path.exists() {
-        let data = fs::read_to_string(&id_path)
-            .map_err(|e| format!("failed to read wallet: {e}"))?;
-        return serde_json::from_str(&data)
-            .map_err(|e| format!("failed to parse wallet: {e}"));
+        let data =
+            fs::read_to_string(&id_path).map_err(|e| format!("failed to read wallet: {e}"))?;
+        return serde_json::from_str(&data).map_err(|e| format!("failed to parse wallet: {e}"));
     }
 
     // Fall back to name search.
     let wallets = list_wallets()?;
-    let matches: Vec<_> = wallets.into_iter().filter(|w| w.name == name_or_id).collect();
+    let matches: Vec<_> = wallets
+        .into_iter()
+        .filter(|w| w.name == name_or_id)
+        .collect();
 
     match matches.len() {
         0 => Err(format!("wallet not found: '{name_or_id}'")),
