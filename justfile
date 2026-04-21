@@ -23,7 +23,9 @@ test:
     set -euo pipefail
     VAULT=$(mktemp -d)
     mkdir -p "$VAULT/wallets"
-    {{act}} run {{wasm}} --http --listen "{{addr}}" --allow-dir "/ows:$VAULT" &
+    {{act}} run {{wasm}} --http --listen "{{addr}}" \
+      --fs-policy allowlist --fs-allow "$VAULT/**" \
+      --metadata "{\"vault_root\":\"$VAULT\"}" &
     trap "kill $!; rm -rf $VAULT" EXIT
     npx wait-on -t 180s {{baseurl}}/info
     {{hurl}} --test --jobs 1 --variable "baseurl={{baseurl}}" --variable "api_key=skip" \

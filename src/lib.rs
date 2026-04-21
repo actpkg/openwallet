@@ -24,6 +24,17 @@ struct Config {
     /// Agent mode enables policy enforcement and scoped wallet access.
     #[serde(default)]
     credential: String,
+
+    /// Host filesystem path under which `wallets/` lives. Must be a
+    /// directory the component has read/write access to (granted by the
+    /// host's filesystem policy — e.g. `--fs-allow "$VAULT/**"`).
+    /// Defaults to the current working directory's `ows_vault` if unset.
+    #[serde(default = "default_vault_root")]
+    vault_root: String,
+}
+
+fn default_vault_root() -> String {
+    "ows_vault".to_string()
 }
 
 // ── Response types ──
@@ -137,13 +148,15 @@ fn secret_to_signing_key(
 /// Resolve a credential to a signing key. Handles both owner mode (passphrase)
 /// and agent mode (API key with policy enforcement).
 fn resolve_signing_key(
+    vault_root: &std::path::Path,
     credential: &str,
     wallet_name_or_id: &str,
     chain_id: &str,
     chain_type: ChainType,
     index: u32,
 ) -> Result<SecretBytes, ActError> {
-    let wallet = vault::load_wallet(wallet_name_or_id).map_err(ActError::invalid_args)?;
+    let wallet =
+        vault::load_wallet(vault_root, wallet_name_or_id).map_err(ActError::invalid_args)?;
 
     if credential.starts_with(key_store::TOKEN_PREFIX) {
         // Agent mode: look up key → check expiry → check scope → evaluate policies → HKDF decrypt
@@ -277,7 +290,8 @@ mod component {
         words: Option<u32>,
         ctx: &mut ActContext<Config>,
     ) -> ActResult<serde_json::Value> {
-        let credential = &ctx.metadata().credential;
+        let credential = ctx.metadata().credential.clone();
+        let vault_root = std::path::PathBuf::from(&ctx.metadata().vault_root);
         let words = words.unwrap_or(12);
 
         let strength = match words {
@@ -286,7 +300,7 @@ mod component {
             _ => return Err(ActError::invalid_args("words must be 12 or 24")),
         };
 
-        if vault::wallet_name_exists(&name).map_err(ActError::internal)? {
+        if vault::wallet_name_exists(&vault_root, &name).map_err(ActError::internal)? {
             return Err(ActError::invalid_args(format!(
                 "wallet name already exists: '{name}'"
             )));
@@ -297,7 +311,7 @@ mod component {
         let accounts = derive_all_accounts(&mnemonic, 0).map_err(ActError::internal)?;
 
         let phrase = mnemonic.phrase();
-        let crypto_envelope = encrypt(phrase.expose(), credential)
+        let crypto_envelope = encrypt(phrase.expose(), &credential)
             .map_err(|e| ActError::internal(format!("encryption failed: {e}")))?;
         let crypto_json = serde_json::to_value(&crypto_envelope)
             .map_err(|e| ActError::internal(e.to_string()))?;
@@ -306,7 +320,7 @@ mod component {
         let wallet =
             EncryptedWallet::new(wallet_id, name, accounts, crypto_json, KeyType::Mnemonic);
 
-        vault::save_wallet(&wallet).map_err(ActError::internal)?;
+        vault::save_wallet(&vault_root, &wallet).map_err(ActError::internal)?;
 
         let info = wallet_to_info(&wallet);
         serde_json::to_value(&info).map_err(|e| ActError::internal(e.to_string()))
@@ -317,8 +331,9 @@ mod component {
         description = "List all wallets in the vault with their addresses",
         read_only
     )]
-    fn list_wallets() -> ActResult<serde_json::Value> {
-        let wallets = vault::list_wallets().map_err(ActError::internal)?;
+    fn list_wallets(ctx: &mut ActContext<Config>) -> ActResult<serde_json::Value> {
+        let vault_root = std::path::PathBuf::from(&ctx.metadata().vault_root);
+        let wallets = vault::list_wallets(&vault_root).map_err(ActError::internal)?;
         let infos: Vec<WalletInfo> = wallets.iter().map(wallet_to_info).collect();
         serde_json::to_value(&infos).map_err(|e| ActError::internal(e.to_string()))
     }
@@ -331,8 +346,10 @@ mod component {
     fn get_wallet(
         /// Wallet name or ID
         wallet: String,
+        ctx: &mut ActContext<Config>,
     ) -> ActResult<serde_json::Value> {
-        let w = vault::load_wallet(&wallet).map_err(ActError::invalid_args)?;
+        let vault_root = std::path::PathBuf::from(&ctx.metadata().vault_root);
+        let w = vault::load_wallet(&vault_root, &wallet).map_err(ActError::invalid_args)?;
         let info = wallet_to_info(&w);
         serde_json::to_value(&info).map_err(|e| ActError::internal(e.to_string()))
     }
@@ -347,8 +364,10 @@ mod component {
         wallet: String,
         /// Chain: evm, solana, bitcoin, cosmos, tron, ton, filecoin, sui, or CAIP-2 ID
         chain: String,
+        ctx: &mut ActContext<Config>,
     ) -> ActResult<String> {
-        let w = vault::load_wallet(&wallet).map_err(ActError::invalid_args)?;
+        let vault_root = std::path::PathBuf::from(&ctx.metadata().vault_root);
+        let w = vault::load_wallet(&vault_root, &wallet).map_err(ActError::invalid_args)?;
         let parsed = parse_chain(&chain).map_err(ActError::invalid_args)?;
 
         let chain_id_prefix = parsed.chain_type.namespace();
@@ -380,7 +399,8 @@ mod component {
         index: Option<u32>,
         ctx: &mut ActContext<Config>,
     ) -> ActResult<serde_json::Value> {
-        let credential = &ctx.metadata().credential;
+        let credential = ctx.metadata().credential.clone();
+        let vault_root = std::path::PathBuf::from(&ctx.metadata().vault_root);
         let parsed = parse_chain(&chain).map_err(ActError::invalid_args)?;
         let encoding = encoding.as_deref().unwrap_or("utf8");
         let index = index.unwrap_or(0);
@@ -397,7 +417,8 @@ mod component {
         };
 
         let key = resolve_signing_key(
-            credential,
+            &vault_root,
+            &credential,
             &wallet,
             parsed.chain_id,
             parsed.chain_type,
@@ -431,7 +452,8 @@ mod component {
         index: Option<u32>,
         ctx: &mut ActContext<Config>,
     ) -> ActResult<serde_json::Value> {
-        let credential = &ctx.metadata().credential;
+        let credential = ctx.metadata().credential.clone();
+        let vault_root = std::path::PathBuf::from(&ctx.metadata().vault_root);
         let parsed = parse_chain(&chain).map_err(ActError::invalid_args)?;
         let index = index.unwrap_or(0);
 
@@ -440,7 +462,8 @@ mod component {
             .map_err(|e| ActError::invalid_args(format!("invalid hex transaction: {e}")))?;
 
         let key = resolve_signing_key(
-            credential,
+            &vault_root,
+            &credential,
             &wallet,
             parsed.chain_id,
             parsed.chain_type,
