@@ -15,51 +15,51 @@ The host must mount `~/.ows/` to `/ows/` in the component for vault access.
 
 ## Tools
 
-### create-wallet
+### create_wallet
 Create a new HD wallet with addresses for all supported chains.
 
 ```
-create-wallet(name: "agent-treasury")
+create_wallet(name: "agent-treasury")
 → { id, name, accounts: [{ chain_id, address, derivation_path }], created_at }
 ```
 
-### list-wallets
+### list_wallets
 List all wallets in the vault.
 
 ```
-list-wallets()
+list_wallets()
 → [{ id, name, accounts, created_at }]
 ```
 
-### get-wallet
+### get_wallet
 Get wallet details by name or ID.
 
 ```
-get-wallet(wallet: "agent-treasury")
+get_wallet(wallet: "agent-treasury")
 → { id, name, accounts, created_at }
 ```
 
-### get-address
+### get_address
 Get the address for a specific chain.
 
 ```
-get-address(wallet: "agent-treasury", chain: "solana")
+get_address(wallet: "agent-treasury", chain: "solana")
 → "ATcgyZfvPyVkV1nsbKQwGh5a55uWKj2LYpKxGHwWUeo8"
 ```
 
-### sign-message
+### sign_message
 Sign a message with chain-specific formatting.
 
 ```
-sign-message(wallet: "agent-treasury", chain: "evm", message: "hello world")
+sign_message(wallet: "agent-treasury", chain: "evm", message: "hello world")
 → { signature: "0x...", recovery_id: 28 }
 ```
 
-### sign-transaction
+### sign_transaction
 Sign a raw hex-encoded transaction.
 
 ```
-sign-transaction(wallet: "agent-treasury", chain: "evm", tx_hex: "02f8...")
+sign_transaction(wallet: "agent-treasury", chain: "evm", tx_hex: "02f8...")
 → { signature: "0x...", recovery_id: 1 }
 ```
 

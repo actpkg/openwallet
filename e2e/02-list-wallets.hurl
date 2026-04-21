@@ -1,5 +1,5 @@
 # At least 3: test-wallet-1, test-wallet-24, and agent-wallet from justfile setup
-POST {{baseurl}}/tools/list-wallets
+POST {{baseurl}}/tools/list_wallets
 {"arguments":{}}
 HTTP 200
 [Asserts]
