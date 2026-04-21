@@ -3,7 +3,7 @@ POST {{baseurl}}/tools/create_wallet
 {"arguments":{"name":"test-wallet-1"}}
 HTTP 200
 [Asserts]
-jsonpath "$.content[0].data.name" "test_wallet_1"
+jsonpath "$.content[0].data.name" == "test_wallet_1"
 jsonpath "$.content[0].data.id" isString
 jsonpath "$.content[0].data.created_at" isString
 jsonpath "$.content[0].data.accounts" count == 8
