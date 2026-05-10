@@ -6,4 +6,4 @@ HTTP 200
 jsonpath "$.content[0].data" count >= 2
 jsonpath "$.content[0].data[0].name" isString
 jsonpath "$.content[0].data[0].id" isString
-jsonpath "$.content[0].data[0].accounts" count == 8
+jsonpath "$.content[0].data[0].accounts" count == 12

@@ -4,7 +4,7 @@ POST {{baseurl}}/tools/get_wallet
 HTTP 200
 [Asserts]
 jsonpath "$.content[0].data.name" == "test-wallet-1"
-jsonpath "$.content[0].data.accounts" count == 8
+jsonpath "$.content[0].data.accounts" count == 12
 
 # Unknown wallet
 POST {{baseurl}}/tools/get_wallet

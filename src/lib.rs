@@ -14,8 +14,6 @@ use ows_signer::{
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
-act_sdk::embed_skill!("skill/");
-
 /// Metadata passed per-call by the host.
 /// The agent never sees this — the host injects it from configuration.
 #[derive(Deserialize, schemars::JsonSchema)]
@@ -54,7 +52,7 @@ struct AccountInfo {
     derivation_path: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, schemars::JsonSchema)]
 struct SignResult {
     signature: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -399,7 +397,7 @@ mod component {
         /// Account index (default: 0)
         index: Option<u32>,
         ctx: &mut ActContext<Config>,
-    ) -> ActResult<serde_json::Value> {
+    ) -> ActResult<SignResult> {
         let credential = ctx.metadata().credential.clone();
         let vault_root = std::path::PathBuf::from(&ctx.metadata().vault_root);
         let parsed = parse_chain(&chain).map_err(ActError::invalid_args)?;
@@ -435,7 +433,7 @@ mod component {
             signature: hex::encode(&output.signature),
             recovery_id: output.recovery_id,
         };
-        serde_json::to_value(&result).map_err(|e| ActError::internal(e.to_string()))
+        Ok(result)
     }
 
     /// Sign a raw transaction.
@@ -452,7 +450,7 @@ mod component {
         /// Account index (default: 0)
         index: Option<u32>,
         ctx: &mut ActContext<Config>,
-    ) -> ActResult<serde_json::Value> {
+    ) -> ActResult<SignResult> {
         let credential = ctx.metadata().credential.clone();
         let vault_root = std::path::PathBuf::from(&ctx.metadata().vault_root);
         let parsed = parse_chain(&chain).map_err(ActError::invalid_args)?;
@@ -483,6 +481,6 @@ mod component {
             signature: hex::encode(&output.signature),
             recovery_id: output.recovery_id,
         };
-        serde_json::to_value(&result).map_err(|e| ActError::internal(e.to_string()))
+        Ok(result)
     }
 }
