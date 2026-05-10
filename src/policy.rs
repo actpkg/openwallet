@@ -59,5 +59,19 @@ fn evaluate_rule(rule: &PolicyRule, policy_id: &str, ctx: &PolicyContext) -> Pol
                 PolicyResult::allowed()
             }
         }
+        PolicyRule::AllowedTypedDataContracts { contracts } => match &ctx.typed_data {
+            None => PolicyResult::allowed(),
+            Some(td) => {
+                let vc = td.verifying_contract.as_deref().unwrap_or("");
+                if contracts.iter().any(|c| c == vc) {
+                    PolicyResult::allowed()
+                } else {
+                    PolicyResult::denied(
+                        policy_id,
+                        format!("typed-data verifyingContract {vc} not in allowlist"),
+                    )
+                }
+            }
+        },
     }
 }

@@ -1,2 +1,5 @@
 [build]
 target = "wasm32-wasip2"
+
+[env]
+CC = "/opt/wasi-sdk/bin/clang"

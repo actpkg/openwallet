@@ -5,6 +5,19 @@
 One `.wasm` file. Zero runtime dependencies. Full OWS vault compatibility.
 Policy-gated API keys give agents scoped wallet access without a blank check.
 
+> **Status: experimental preview.** Reference implementation of a hardened
+> wallet component for AI agents — *not* a production wallet. Implements the
+> [Open Wallet Standard (OWS)](https://openwallet.sh/) via the upstream
+> [`ows-core`](https://github.com/open-wallet-standard/core) and `ows-signer`
+> crates; a production-grade rebuild tracking the standard is planned once
+> the spec stabilises. Use it to evaluate the capability-ceiling + signed-OCI
+> distribution model on a security-sensitive workload, not to hold real keys.
+>
+> *Note: OWS (openwallet.sh) is independent from the
+> [OpenWallet Foundation](https://openwallet.foundation/) (Linux Foundation,
+> focused on verifiable credentials). Despite the name overlap they are
+> different initiatives.*
+
 ```bash
 # Serve over MCP (Claude, GPT, any MCP client)
 act run --mcp component-openwallet.wasm --allow-dir /ows:~/.ows

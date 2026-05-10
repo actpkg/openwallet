@@ -234,6 +234,7 @@ fn evaluate_policies(key_file: &ApiKeyFile, chain_id: &str) -> Result<(), ActErr
             date: now.format("%Y-%m-%d").to_string(),
         },
         timestamp: now.to_rfc3339(),
+        typed_data: None,
     };
 
     let result = policy::evaluate(&policies, &context);
