@@ -24,6 +24,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: just init
       - uses: bytecodealliance/setup-wasi-sdk-action@main
+        with:
+          version: "33"
       - run: just build
       - uses: actions/upload-artifact@v7
         with:
@@ -43,6 +45,8 @@ jobs:
       - run: cargo fmt -- --check
       - run: just init
       - uses: bytecodealliance/setup-wasi-sdk-action@main
+        with:
+          version: "33"
       - run: cargo clippy -- -D warnings
 
   e2e:
@@ -62,6 +66,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: just init
       - uses: bytecodealliance/setup-wasi-sdk-action@main
+        with:
+          version: "33"
       - run: just test
 
   publish:
@@ -86,6 +92,8 @@ jobs:
       - uses: sigstore/cosign-installer@v4.1.2   # defaults to cosign 3.x → OCI 1.1 referrer signatures
       - run: just init
       - uses: bytecodealliance/setup-wasi-sdk-action@main
+        with:
+          version: "33"
       - name: Publish
         id: publish
         env:
