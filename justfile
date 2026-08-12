@@ -20,14 +20,20 @@ init:
 setup: init
     prek install
 
+# Build and pack. Packing is part of building on purpose: `cargo build` alone
+# produces a wasm with no `act:component` section, which declares no capability
+# ceiling, so at runtime every grant is refused as "outside ceiling" and the
+# failure points anywhere but at the missing metadata.
 build:
     cargo build --release
-
-# Embed act:component metadata and act:skill into the wasm.
-pack: build
     {{actbuild}} pack {{wasm}}
 
-test: pack
+# Re-embed act:component metadata and act:skill without rebuilding. `pack` is
+# idempotent, so running it after `build` is harmless.
+pack:
+    {{actbuild}} pack {{wasm}}
+
+test: build
     #!/usr/bin/env bash
     set -euo pipefail
     VAULT=$(mktemp -d)
@@ -60,7 +66,7 @@ test-agent:
     {{hurl}} --test --variable "baseurl={{baseurl}}" --variable "api_key=$TOKEN" --variable "agent_wallet=$WALLET" \
       e2e/07-agent-mode.hurl
 
-publish: pack
+publish: build
     #!/usr/bin/env bash
     set -euo pipefail
     INFO=$({{act}} inspect component-manifest {{wasm}})
